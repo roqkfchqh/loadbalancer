@@ -15,9 +15,9 @@ public class HealthCheckService {
 
     //healthCheck 대상 서버 url 리스트
     private final List<String> servers = List.of(
-        "http://localhost:8081",
-        "http://localhost:8082",
-        "http://localhost:8083"
+            "http://localhost:8081",
+            "http://localhost:8082",
+            "http://localhost:8083"
     );
     //정상 서버들을 저장하는 스레드 안전 리스트
     private final CopyOnWriteArrayList<String> healthyServers = new CopyOnWriteArrayList<>();

@@ -12,7 +12,6 @@ import java.util.List;
 @Slf4j
 @Component
 public class LoadBalancer {
-    //스프링부트 자체가 api 처리 시에 비동기로 처리되는데 왜 synchronized 씀?
 
     private final HealthCheckService healthCheckService;
     private final AtomicInteger currentIndex = new AtomicInteger(0);
@@ -23,12 +22,14 @@ public class LoadBalancer {
 
     //다음 정상서버를 가져오고 클라이언트 요청 전달 준비
     public String forwardRequest(String clientRequest) throws Exception {
+        log.info("Received client request: {}", clientRequest);
         String server = getNextServer();
 
         //클라이언트 요청을 안전하게 인코딩
         String encodedRequest = java.net.URLEncoder.encode(clientRequest, StandardCharsets.UTF_8);
+        log.info("Encoded request: {}", encodedRequest);
         //get 요청 준비
-        URL url = new URL(server + encodedRequest);
+        URL url = new URL(server + "/" + encodedRequest);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
 
@@ -46,7 +47,6 @@ public class LoadBalancer {
     }
 
     //현재 정상서버 리스트 가져옴
-    //동기화 블록 사용해 멀티스레드 환경에서의 동시성 문제 방지
     private String getNextServer() {
         List<String> healthyServers = healthCheckService.getHealthyServers();
 
