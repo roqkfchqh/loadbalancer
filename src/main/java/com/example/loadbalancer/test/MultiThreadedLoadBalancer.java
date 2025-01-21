@@ -1,6 +1,6 @@
 //package com.example.loadbalancer.test;
 //
-//import com.example.loadbalancer.core.LoadBalancer;
+//import com.example.loadbalancer.concrete.RoundRobinLoadBalancer;
 //import jakarta.annotation.PostConstruct;
 //
 //import java.util.concurrent.ExecutorService;
@@ -13,9 +13,9 @@
 //@Component
 //public class MultiThreadedLoadBalancer {
 //
-//    private final LoadBalancer loadBalancer;
+//    private final RoundRobinLoadBalancer loadBalancer;
 //
-//    public MultiThreadedLoadBalancer(LoadBalancer loadBalancer) {
+//    public MultiThreadedLoadBalancer(RoundRobinLoadBalancer loadBalancer) {
 //        this.loadBalancer = loadBalancer;
 //    }
 //
