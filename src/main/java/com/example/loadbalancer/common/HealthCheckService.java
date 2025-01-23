@@ -38,7 +38,7 @@ public class HealthCheckService {
             }
         });
 
-        log.info("Updated healthy servers: {}", healthyServers); // 로그로 상태 업데이트
+        log.info("Updated healthy servers: {}", healthyServers);
     }
 
     public int getResponseTime(String serverUrl) {
