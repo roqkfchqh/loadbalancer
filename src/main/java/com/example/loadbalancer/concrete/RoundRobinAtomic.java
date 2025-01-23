@@ -4,7 +4,7 @@ import com.example.loadbalancer.common.LoadBalancerStrategy;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RoundRobinStrategy implements LoadBalancerStrategy {
+public class RoundRobinAtomic implements LoadBalancerStrategy {
 
     private final AtomicInteger currentIndex = new AtomicInteger(0);
 
