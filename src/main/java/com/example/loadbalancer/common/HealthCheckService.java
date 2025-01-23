@@ -24,19 +24,21 @@ public class HealthCheckService {
         return List.copyOf(healthyServers);
     }
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRateString = "${healthcheck.fixedRate}")
     public void performHealthCheck() {
-        List<String> toCheck = new ArrayList<>(configProperties.servers());
-        toCheck.removeAll(healthyServers);
+        List<String> allServers = new ArrayList<>(configProperties.servers());
 
-        toCheck.forEach(server -> {
+        allServers.forEach(server -> {
             if (isServerHealthy(server)) {
-                healthyServers.add(server);
+                if (!healthyServers.contains(server)) {
+                    healthyServers.add(server);
+                }
+            } else {
+                healthyServers.remove(server);
             }
         });
 
-        healthyServers.removeIf(server -> !isServerHealthy(server));
-        log.info("Updated healthy servers: {}", healthyServers);
+        log.info("Updated healthy servers: {}", healthyServers); // 로그로 상태 업데이트
     }
 
     public int getResponseTime(String serverUrl) {
