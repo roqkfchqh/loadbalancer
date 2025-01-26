@@ -1,0 +1,16 @@
+services:
+  load_balancer:
+    container_name: load_balancer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"
+    networks:
+      - shared_network
+    environment:
+      - SPRING_PROFILES_ACTIVE=load_balancer
+
+networks:
+  shared_network:
+    external: true
