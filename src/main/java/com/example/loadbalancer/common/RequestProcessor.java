@@ -25,6 +25,7 @@ public class RequestProcessor {
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(String.class)
+                .retry(3)
                 .onErrorResume(e -> Mono.just("Error: " + e.getMessage()));
         }catch(Exception e){
             return Mono.just("Error: " + e.getMessage());
