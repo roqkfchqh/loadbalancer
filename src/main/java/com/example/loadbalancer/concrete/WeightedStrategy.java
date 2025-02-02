@@ -2,6 +2,8 @@ package com.example.loadbalancer.concrete;
 
 import com.example.loadbalancer.common.HealthCheckService;
 import com.example.loadbalancer.common.LoadBalancerStrategy;
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,15 +31,17 @@ public class WeightedStrategy implements LoadBalancerStrategy {
         scheduler.scheduleAtFixedRate(() -> {
             List<String> healthyServers = healthCheckService.getHealthyServers();
             healthyServers.forEach(server -> {
-                int responseTime = healthCheckService.getResponseTime(server);
+                Mono<Integer> responseTime = healthCheckService.getResponseTime(server);
                 updateWeight(server, responseTime);
             });
         }, 0, 10, TimeUnit.SECONDS);
     }
 
-    private void updateWeight(String server, int responseTime) {
-        int newWeight = Math.max(1, 10 - (responseTime / 100));
-        serverWeights.put(server, newWeight);
+    private void updateWeight(String server, Mono<Integer> responseTimeMono) {
+        responseTimeMono.subscribe(responseTime -> {
+            int newWeight = Math.max(1, 10 - (responseTime / 100));
+            serverWeights.put(server, newWeight);
+        });
     }
 
     @Override

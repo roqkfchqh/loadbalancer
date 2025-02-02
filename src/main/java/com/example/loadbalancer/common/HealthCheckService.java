@@ -1,14 +1,13 @@
 package com.example.loadbalancer.common;
 
 import com.example.loadbalancer.values.LoadBalancerConfigProperties;
-import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -19,6 +18,7 @@ public class HealthCheckService {
 
     private final LoadBalancerConfigProperties configProperties;
     private final CopyOnWriteArrayList<String> healthyServers = new CopyOnWriteArrayList<>();
+    private final WebClient webClient = WebClient.builder().build();
 
     public List<String> getHealthyServers() {
         return List.copyOf(healthyServers);
@@ -26,49 +26,39 @@ public class HealthCheckService {
 
     @Scheduled(fixedRateString = "${healthcheck.fixedRate}")
     public void performHealthCheck() {
-        List<String> allServers = new ArrayList<>(configProperties.servers());
-
-        allServers.forEach(server -> {
-            if (isServerHealthy(server)) {
-                if (!healthyServers.contains(server)) {
-                    healthyServers.add(server);
-                }
-            } else {
-                healthyServers.remove(server);
-            }
-        });
-
+        List<String> allServers = configProperties.servers();
+        log.info("Health check for servers: {}", allServers);
+        allServers.forEach(server ->
+                isServerHealthy(server).subscribe(isHealthy -> {
+                    if (isHealthy) {
+                        if (!healthyServers.contains(server)) {
+                            healthyServers.add(server);
+                        }
+                    } else {
+                        healthyServers.remove(server);
+                    }
+                })
+        );
+        log.info("Health check finished.");
         log.info("Updated healthy servers: {}", healthyServers);
     }
 
-    public int getResponseTime(String serverUrl) {
-        try {
-            long startTime = System.currentTimeMillis();
-            URL url = new URL(serverUrl + "/actuator/health");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(configProperties.maxResponseTime());
-            connection.setReadTimeout(configProperties.maxResponseTime());
-            connection.getResponseCode();
-            long endTime = System.currentTimeMillis();
-            return (int) (endTime - startTime);
-        } catch (Exception e) {
-            log.error("Failed to get response time for {}: {}", serverUrl, e.getMessage());
-            return configProperties.maxResponseTime();
-        }
+    public Mono<Integer> getResponseTime(String serverUrl) {
+        long startTime = System.currentTimeMillis();
+        return webClient.get()
+                .uri(serverUrl + "/actuator/health")
+                .retrieve()
+                .toBodilessEntity()
+                .map(response -> (int) (System.currentTimeMillis() - startTime))
+                .onErrorReturn(configProperties.maxResponseTime());
     }
 
-    private boolean isServerHealthy(String serverUrl) {
-        try {
-            URL url = new URL(serverUrl + "/actuator/health");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(configProperties.maxResponseTime());
-            connection.setReadTimeout(configProperties.maxResponseTime());
-            return connection.getResponseCode() == 200;
-        } catch (Exception e) {
-            log.error("Health check failed for {}: {}", serverUrl, e.getMessage());
-            return false;
-        }
+    private Mono<Boolean> isServerHealthy(String serverUrl) {
+        return webClient.get()
+                .uri(serverUrl + "/actuator/health")
+                .retrieve()
+                .toBodilessEntity()
+                .map(response -> response.getStatusCode().is2xxSuccessful())
+                .onErrorReturn(false);
     }
 }
